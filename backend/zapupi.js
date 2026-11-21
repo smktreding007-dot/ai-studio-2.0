@@ -194,22 +194,31 @@ async function creditOnce(orderId, order, remote) {
   if (!uid || !Number.isSafeInteger(amountPaise) || amountPaise < 1)
     throw new ApiError(503, 'payment_record_invalid', 'The payment order could not be verified');
 
-  // A transaction on the user record combines the wallet increment and its idempotency marker.
-  // If delivery is retried after a crash, the marker prevents a duplicate credit.
-  const result = await userRef.transaction((current) => {
-    if (!current) return;
-    const credited = current.zapupiCreditedOrders || {};
-    if (credited[orderId] === true) return;
-    const oldBalance = Number(current.deposited || 0);
-    if (!Number.isFinite(oldBalance) || oldBalance < 0) return;
-    current.deposited = Math.round((oldBalance + amount) * 100) / 100;
-    credited[orderId] = true;
-    current.zapupiCreditedOrders = credited;
-    return current;
-  }, undefined, false);
-  if (!result.committed) {
-    const marker = await userRef.child(`zapupiCreditedOrders/${orderId}`).get();
-    if (marker.val() !== true) throw new ApiError(503, 'wallet_credit_failed', 'Payment confirmed, but wallet update needs retry');
+  const userSnap = await userRef.get();
+  if (!userSnap.exists())
+    throw new ApiError(404, 'payment_record_invalid', 'Player account not found');
+
+  if (userSnap.child(`zapupiCreditedOrders/${orderId}`).val() !== true) {
+    // A transaction on the user record combines the wallet increment and its idempotency marker.
+    // Firebase Admin RTDB invokes transaction callbacks with null first when the path isn't cached;
+    // returning a probe object instead of undefined makes Firebase fetch the real server record and retry.
+    const result = await userRef.transaction((current) => {
+      if (current === null || current === undefined) {
+        return { deposited: amount, zapupiCreditedOrders: { [orderId]: true } };
+      }
+      const credited = current.zapupiCreditedOrders || {};
+      if (credited[orderId] === true) return;
+      const oldBalance = Number(current.deposited || 0);
+      if (!Number.isFinite(oldBalance) || oldBalance < 0) return;
+      current.deposited = Math.round((oldBalance + amount) * 100) / 100;
+      credited[orderId] = true;
+      current.zapupiCreditedOrders = credited;
+      return current;
+    }, undefined, false);
+    if (!result.committed) {
+      const marker = await userRef.child(`zapupiCreditedOrders/${orderId}`).get();
+      if (marker.val() !== true) throw new ApiError(503, 'wallet_credit_failed', 'Payment confirmed, but wallet update needs retry');
+    }
   }
 
   const now = Date.now();
@@ -407,7 +416,7 @@ router.get('/return', statusLimiter, async (req, res) => {
   await refreshKey();
   const rawOrderId = String((req.query && (req.query.orderId || req.query.order_id)) || '').slice(0, 128);
   const hint = String((req.query && req.query.result) || '').toLowerCase();
-  const tries = Math.max(0, Math.min(12, Number(req.query && req.query.t) || 0));
+  const tries = Math.max(0, Math.min(15, Number(req.query && req.query.t) || 0));
   let orderId = isLocalOrderId(rawOrderId) ? rawOrderId : '';
   if (!orderId && rawOrderId) {
     try {
@@ -432,14 +441,15 @@ router.get('/return', statusLimiter, async (req, res) => {
     }
   } else {
     // Fallback when ZapUPI redirects to the global Dashboard return URL without query params:
-    // reconcile recent pending orders from the last 15 minutes so payment still credits automatically.
+    // read zapupiPayments directly (avoids orderByChild index requirement) and reconcile recent pending orders.
     try {
-      const snap = await db.ref('zapupiPayments').orderByChild('status').equalTo('pending').limitToLast(5).get();
+      const snap = await db.ref('zapupiPayments').get();
       const rows = snap.val() || {};
       const cutoff = Date.now() - 15 * 60 * 1000;
       const recent = Object.entries(rows)
-        .filter(([, v]) => v && Number(v.createdAt || 0) >= cutoff)
-        .sort((a, b) => Number(b[1].createdAt || 0) - Number(a[1].createdAt || 0));
+        .filter(([, v]) => v && v.status === 'pending' && Number(v.createdAt || 0) >= cutoff)
+        .sort((a, b) => Number(b[1].createdAt || 0) - Number(a[1].createdAt || 0))
+        .slice(0, 5);
       for (const [id, ord] of recent) {
         try {
           const s = await reconcileOrder(id, ord);
@@ -466,17 +476,17 @@ router.get('/return', statusLimiter, async (req, res) => {
   const ok = status === 'success';
   const bad = status === 'failed' || status === 'timeout' || status === 'test' || status === 'amount_mismatch';
   const badgeColor = ok ? '#2ECC71' : bad ? '#FF4D4F' : '#F59E0B';
-  const title = ok ? 'Payment Confirmed!' : bad ? 'Payment Not Completed' : 'Verifying Payment...';
+  const title = ok ? 'Coins Added to Wallet!' : bad ? 'Payment Not Completed' : 'Verifying Payment...';
   const subtitle = ok
-    ? `${amountText ? `${amountText} has been` : 'Coins have been'} added to your DOUx24 wallet.`
+    ? `${amountText ? `${amountText} has been` : 'Coins have been'} credited to your DOUx24 Wallet. Returning to app...`
     : bad
       ? 'If any money was debited, it will auto-refund or update shortly. Return to your DOUx24 Wallet to check.'
-      : 'Confirming your UPI payment with ZapUPI. Please wait a few seconds or return to DOUx24 Wallet.';
+      : 'Confirming your UPI payment with ZapUPI. Please wait 2 seconds...';
   const refreshUrl = orderId
     ? `/api/payments/zapupi/return?orderId=${encodeURIComponent(orderId)}&t=${tries + 1}`
     : `/api/payments/zapupi/return?t=${tries + 1}`;
-  const autoRefresh = !ok && !bad && tries < 10
-    ? `<meta http-equiv="refresh" content="3;url=${refreshUrl}">`
+  const autoRefresh = !ok && !bad && tries < 15
+    ? `<meta http-equiv="refresh" content="2;url=${refreshUrl}">`
     : '';
   return res.status(200).send(`<!doctype html>
 <html lang="en">
@@ -502,9 +512,22 @@ router.get('/return', statusLimiter, async (req, res) => {
     <h1>${title}</h1>
     <p>${subtitle}</p>
     ${!ok && !bad ? `<a class="btn" href="${refreshUrl}">Refresh Payment Status</a>` : ''}
-    <button class="btn2" onclick="window.close();">Close &amp; Return to DOUx24</button>
-    <div class="hint">Tap your phone Back button (←) anytime to return to Wallet.</div>
+    <button class="btn${ok ? '' : '2'}" onclick="try{window.close();}catch(e){}">Back to DOUx24 Wallet</button>
+    <div class="hint">${ok ? 'Coins are credited! If this window does not close automatically, tap Back (←) once.' : 'Tap your phone Back button (←) anytime to return to Wallet.'}</div>
   </div>
+  ${ok ? `<script>
+    (function () {
+      var isWv = /\\bwv\\b/i.test(navigator.userAgent || '');
+      try { window.close(); } catch (e) {}
+      if (!isWv && window.location.search.indexOf('returned=1') === -1) {
+        var sep = window.location.search ? '&' : '?';
+        var fallback = encodeURIComponent(window.location.href + sep + 'returned=1');
+        setTimeout(function () {
+          window.location.replace('intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.doux24.player;S.browser_fallback_url=' + fallback + ';end');
+        }, 250);
+      }
+    })();
+  </script>` : ''}
 </body>
 </html>`);
 });
