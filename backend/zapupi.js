@@ -240,24 +240,29 @@ async function reconcileOrder(orderId, order) {
   const statusRequestId = String(order.gatewayOrderId || orderId);
   const result = await zapupiPost('order-status', { zap_key: apiKey(), order_id: statusRequestId });
   const remote = result.data;
-  if (!remote || !['Pending', 'Success', 'Failed'].includes(String(remote.status)))
+  const remoteStatus = String((remote && remote.status) || '').trim().toLowerCase();
+  if (!remote || !['pending', 'success', 'failed'].includes(remoteStatus))
     throw new ApiError(502, 'gateway_status_invalid', 'Could not verify the payment status');
   if (remote.order_id !== undefined && String(remote.order_id) !== statusRequestId)
     throw new ApiError(502, 'gateway_order_mismatch', 'Could not verify the payment order');
 
-  if (remote.status === 'Pending') {
+  if (remoteStatus === 'pending') {
     await db.ref(`zapupiPayments/${orderId}`).update({ gatewayStatus: 'Pending', updatedAt: Date.now() });
     return 'pending';
   }
-  if (remote.status === 'Failed') return setOrderFailure(orderId, 'failed', null, remote);
+  if (remoteStatus === 'failed') return setOrderFailure(orderId, 'failed', null, remote);
 
-  if (!amountsMatch(remote, Number(order.amountPaise)))
+  if (!amountsMatch(remote, Number(order.amountPaise))) {
+    console.warn('[ZapUPI] amount mismatch', JSON.stringify({ orderId, expectedPaise: order.amountPaise, remoteAmount: remote.amount, remotePayAmount: remote.pay_amount }));
     return setOrderFailure(orderId, 'amount_mismatch', 'Gateway amount requires manual review', remote);
+  }
   const environment = String(remote.environment || '').toLowerCase();
   if (environment === 'test' && process.env.ZAPUPI_ALLOW_TEST_PAYMENTS !== 'true')
     return setOrderFailure(orderId, 'test', 'Test-environment payments are not credited', remote);
-  if (!['cashier', 'zappay', 'test'].includes(environment))
+  if (environment && !['cashier', 'zappay', 'test', 'live', 'production'].includes(environment)) {
+    console.warn('[ZapUPI] unexpected gateway environment', JSON.stringify({ orderId, environment }));
     return setOrderFailure(orderId, 'amount_mismatch', 'Gateway environment requires manual review', remote);
+  }
 
   return creditOnce(orderId, order, remote);
 }
@@ -369,21 +374,29 @@ router.post('/status', statusLimiter, async (req, res, next) => {
 router.post('/webhook', webhookLimiter, async (req, res) => {
   await refreshKey();
   const body = req.body || {};
-  const externalOrderId = String(body.order_id || '').slice(0, 128);
+  const externalOrderId = String(body.order_id || body.orderId || '').slice(0, 128);
   let orderId = externalOrderId;
   try {
     if (!isLocalOrderId(orderId)) {
-      if (!externalOrderId) return res.status(200).json({ status: 'ok' });
+      if (!externalOrderId) {
+        console.warn('[ZapUPI] webhook received without order_id', JSON.stringify({ contentType: String(req.headers['content-type'] || ''), keys: Object.keys(body).slice(0, 10) }));
+        return res.status(200).json({ status: 'ok' });
+      }
       const mappingKey = crypto.createHash('sha256').update(externalOrderId).digest('hex');
       const mapped = await db.ref(`zapupiOrderMap/${mappingKey}`).get();
       orderId = String(mapped.val() || '');
     }
-    if (!isLocalOrderId(orderId)) return res.status(200).json({ status: 'ok' });
+    if (!isLocalOrderId(orderId)) {
+      console.warn('[ZapUPI] webhook order_id not mapped', JSON.stringify({ externalOrderId }));
+      return res.status(200).json({ status: 'ok' });
+    }
     const order = await findLocalOrder(orderId);
     if (!order) return res.status(200).json({ status: 'ok' });
-    await reconcileOrder(orderId, order);
+    const status = await reconcileOrder(orderId, order);
+    console.log('[ZapUPI] webhook reconciled', JSON.stringify({ orderId, status }));
     return res.status(200).json({ status: 'ok' });
-  } catch (_e) {
+  } catch (e) {
+    console.error('[ZapUPI] webhook reconcile error', JSON.stringify({ orderId, message: safeProviderText(e && e.message, 120) }));
     // No payment is credited from webhook fields. A failed server-side status check is retriable.
     return res.status(503).json({ status: 'retry' });
   }
@@ -394,7 +407,7 @@ router.get('/return', statusLimiter, async (req, res) => {
   await refreshKey();
   const rawOrderId = String((req.query && (req.query.orderId || req.query.order_id)) || '').slice(0, 128);
   const hint = String((req.query && req.query.result) || '').toLowerCase();
-  const tries = Math.max(0, Math.min(5, Number(req.query && req.query.t) || 0));
+  const tries = Math.max(0, Math.min(12, Number(req.query && req.query.t) || 0));
   let orderId = isLocalOrderId(rawOrderId) ? rawOrderId : '';
   if (!orderId && rawOrderId) {
     try {
@@ -413,7 +426,42 @@ router.get('/return', statusLimiter, async (req, res) => {
         if (Number.isFinite(Number(order.amount))) amountText = `₹${Number(order.amount).toFixed(2)}`;
         status = await reconcileOrder(orderId, order);
       }
-    } catch { /* keep current status so user sees clean return page instead of error */ }
+      console.log('[ZapUPI] return reconciled', JSON.stringify({ orderId, status }));
+    } catch (e) {
+      console.error('[ZapUPI] return reconcile error', JSON.stringify({ orderId, message: safeProviderText(e && e.message, 120) }));
+    }
+  } else {
+    // Fallback when ZapUPI redirects to the global Dashboard return URL without query params:
+    // reconcile recent pending orders from the last 15 minutes so payment still credits automatically.
+    try {
+      const snap = await db.ref('zapupiPayments').orderByChild('status').equalTo('pending').limitToLast(5).get();
+      const rows = snap.val() || {};
+      const cutoff = Date.now() - 15 * 60 * 1000;
+      const recent = Object.entries(rows)
+        .filter(([, v]) => v && Number(v.createdAt || 0) >= cutoff)
+        .sort((a, b) => Number(b[1].createdAt || 0) - Number(a[1].createdAt || 0));
+      for (const [id, ord] of recent) {
+        try {
+          const s = await reconcileOrder(id, ord);
+          console.log('[ZapUPI] return fallback reconciled', JSON.stringify({ orderId: id, status: s }));
+          if (!orderId) {
+            orderId = id;
+            status = s;
+            if (Number.isFinite(Number(ord.amount))) amountText = `₹${Number(ord.amount).toFixed(2)}`;
+          }
+          if (s === 'success') {
+            orderId = id;
+            status = s;
+            if (Number.isFinite(Number(ord.amount))) amountText = `₹${Number(ord.amount).toFixed(2)}`;
+            break;
+          }
+        } catch (err) {
+          console.error('[ZapUPI] return fallback error', JSON.stringify({ orderId: id, message: safeProviderText(err && err.message, 120) }));
+        }
+      }
+    } catch (e) {
+      console.error('[ZapUPI] return recent scan error', JSON.stringify({ message: safeProviderText(e && e.message, 120) }));
+    }
   }
   const ok = status === 'success';
   const bad = status === 'failed' || status === 'timeout' || status === 'test' || status === 'amount_mismatch';
@@ -423,9 +471,12 @@ router.get('/return', statusLimiter, async (req, res) => {
     ? `${amountText ? `${amountText} has been` : 'Coins have been'} added to your DOUx24 wallet.`
     : bad
       ? 'If any money was debited, it will auto-refund or update shortly. Return to your DOUx24 Wallet to check.'
-      : 'Confirming your UPI payment with ZapUPI. Wait a few seconds or return to DOUx24 Wallet and tap Check Status.';
-  const autoRefresh = !ok && !bad && orderId && tries < 3
-    ? `<meta http-equiv="refresh" content="3;url=/api/payments/zapupi/return?orderId=${encodeURIComponent(orderId)}&t=${tries + 1}">`
+      : 'Confirming your UPI payment with ZapUPI. Please wait a few seconds or return to DOUx24 Wallet.';
+  const refreshUrl = orderId
+    ? `/api/payments/zapupi/return?orderId=${encodeURIComponent(orderId)}&t=${tries + 1}`
+    : `/api/payments/zapupi/return?t=${tries + 1}`;
+  const autoRefresh = !ok && !bad && tries < 10
+    ? `<meta http-equiv="refresh" content="3;url=${refreshUrl}">`
     : '';
   return res.status(200).send(`<!doctype html>
 <html lang="en">
@@ -440,7 +491,8 @@ router.get('/return', statusLimiter, async (req, res) => {
     .badge{width:64px;height:64px;margin:0 auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;background:${badgeColor}22;color:${badgeColor};border:2px solid ${badgeColor}}
     h1{margin:0 0 10px;font-size:22px;font-weight:800}
     p{margin:0 0 20px;color:#C8C2D6;font-size:14px;line-height:1.55}
-    .btn{display:inline-block;width:100%;box-sizing:border-box;padding:13px 18px;border:0;border-radius:12px;background:#7C3AED;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+    .btn{display:block;width:100%;box-sizing:border-box;padding:13px 18px;border:0;border-radius:12px;background:#7C3AED;color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
+    .btn2{display:block;width:100%;box-sizing:border-box;padding:11px 16px;margin-top:10px;border:1px solid rgba(155,92,255,.45);border-radius:12px;background:transparent;color:#D9CCFF;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
     .hint{margin-top:12px;font-size:12px;color:#8E87A3}
   </style>
 </head>
@@ -449,8 +501,9 @@ router.get('/return', statusLimiter, async (req, res) => {
     <div class="badge">${ok ? '✓' : bad ? '!' : '⏳'}</div>
     <h1>${title}</h1>
     <p>${subtitle}</p>
-    <button class="btn" onclick="window.close();">Close &amp; Return to DOUx24</button>
-    <div class="hint">If this screen stays open, tap the top-left Back arrow (←) or your phone Back button.</div>
+    ${!ok && !bad ? `<a class="btn" href="${refreshUrl}">Refresh Payment Status</a>` : ''}
+    <button class="btn2" onclick="window.close();">Close &amp; Return to DOUx24</button>
+    <div class="hint">Tap your phone Back button (←) anytime to return to Wallet.</div>
   </div>
 </body>
 </html>`);

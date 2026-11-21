@@ -15,6 +15,7 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use((req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); next(); });
 app.use(express.json({ limit: '24kb', type: 'application/json' }));
+app.use(express.urlencoded({ extended: false, limit: '24kb' }));
 
 function requireFirebase(_req, res, next) {
   if (lib.isFirebaseReady()) return next();
