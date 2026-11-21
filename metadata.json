@@ -1,0 +1,6 @@
+{
+  "name": "DOUx24 Staff",
+  "description": "DOUx24 Staff app for assigned esports match operations, room management, support tickets, and player verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm --prefix backend ci --omit=dev || npm --prefix backend install --omit=dev"]
+
+[phases.build]
+cmds = ["node -c backend/server.js"]
+
+[start]
+cmd = "npm start --prefix backend"

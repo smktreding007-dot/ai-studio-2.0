@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "28180768205",
+    "project_id": "doux24-c9bb3",
+    "storage_bucket": "doux24-c9bb3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28180768205:android:3d339925b3af8cde3ed084",
+        "android_client_info": {
+          "package_name": "com.doux24.player"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtdrv1WOmOd1d3Oiir6GM0xjOf65F7lrg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

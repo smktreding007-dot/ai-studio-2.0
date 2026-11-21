@@ -1,0 +1,919 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_export').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      ".indexOn": [
+        "createdAt",
+        "role",
+        "username",
+        "phone",
+        "email"
+      ],
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_export').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true)))",
+        ".write": "auth!=null && ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (!data.exists() && auth.uid===$uid))",
+        "role": {
+          ".write": "auth!=null && ((root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth.uid===$uid && (root.child('system').child('bootstrapped').val()!==true && root.child('adminSignups').child($uid).exists())))",
+          ".validate": "newData.val()==='user' || (root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth.uid===$uid && newData.val()==='admin' && (root.child('system').child('bootstrapped').val()!==true && root.child('adminSignups').child($uid).exists()))"
+        },
+        "deposited": {
+          ".write": "((auth!=null && auth.uid===$uid && newData.val() <= data.val()) || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_reward').val()===true))) || (auth!=null && auth.uid===$uid && newData.val()>data.val() && newData.parent().parent().parent().child('spinState').child($uid).child('lastAt').val()===now && newData.parent().parent().parent().child('spinState').child($uid).child('lastWallet').val()==='deposited' && newData.val()===data.val()+newData.parent().parent().parent().child('spinState').child($uid).child('lastAmount').val())",
+          ".validate": "(newData.isNumber() && ((((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_reward').val()===true))) || newData.val()===0 || (auth!=null && auth.uid===$uid && newData.val() <= data.val()))) || (newData.isNumber() && auth!=null && auth.uid===$uid && newData.val()>data.val() && newData.parent().parent().parent().child('spinState').child($uid).child('lastAt').val()===now && newData.parent().parent().parent().child('spinState').child($uid).child('lastWallet').val()==='deposited' && newData.val()===data.val()+newData.parent().parent().parent().child('spinState').child($uid).child('lastAmount').val())"
+        },
+        "winning": {
+          ".write": "((auth!=null && auth.uid===$uid && newData.val() <= data.val()) || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))) || (auth!=null && auth.uid===$uid && newData.val()>data.val() && newData.parent().parent().parent().child('spinState').child($uid).child('lastAt').val()===now && newData.parent().parent().parent().child('spinState').child($uid).child('lastWallet').val()==='winning' && newData.val()===data.val()+newData.parent().parent().parent().child('spinState').child($uid).child('lastAmount').val())",
+          ".validate": "(newData.isNumber() && ((((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))) || newData.val()===0 || (auth!=null && auth.uid===$uid && newData.val() <= data.val()))) || (newData.isNumber() && auth!=null && auth.uid===$uid && newData.val()>data.val() && newData.parent().parent().parent().child('spinState').child($uid).child('lastAt').val()===now && newData.parent().parent().parent().child('spinState').child($uid).child('lastWallet').val()==='winning' && newData.val()===data.val()+newData.parent().parent().parent().child('spinState').child($uid).child('lastAmount').val())"
+        },
+        "earnings": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "wins": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "kills": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "matchesPlayed": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "payouts": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true))"
+        },
+        "banned": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_moderate').val()===true))"
+        },
+        "kyc": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_moderate').val()===true))"
+        },
+        "referralEarnings": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true))"
+        },
+        "firstName": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "lastName": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "dob": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "gender": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "pushEnabled": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "avatar": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "$other": {
+          ".validate": true
+        },
+        "fcmToken": {
+          ".write": "auth!=null && auth.uid===$uid"
+        },
+        "theme": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_theme').val()===true))"
+        },
+        "staffPermissions": {
+          ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+          ".validate": "newData.hasChildren()",
+          "$permission": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "banReason": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_moderate').val()===true))"
+        }
+      }
+    },
+    "adminSignups": {
+      ".read": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$uid": {
+        ".write": "auth!=null && ((auth.uid===$uid && !data.exists() && root.child('system').child('bootstrapped').val()!==true && newData.child('key').isString() && newData.child('key').val().matches(/^[0-9]{12}$/)) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))"
+      }
+    },
+    "adminConfig": {
+      ".read": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()"
+    },
+    "system": {
+      "bootstrapped": {
+        ".read": true,
+        ".write": "auth!=null && !data.exists() && newData.val()===true && root.child('adminSignups').child(auth.uid).exists()"
+      }
+    },
+    "panelInvites": {
+      ".read": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$uid": {
+        ".write": "(auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && auth.uid===$uid && root.child('system').child('bootstrapped').val()!==true && root.child('adminSignups').child($uid).exists())",
+        "key": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{12}$/)"
+        },
+        "role": {
+          ".validate": "newData.val()==='staff' || newData.val()==='admin'"
+        }
+      }
+    },
+    "panelLogin": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))",
+        ".write": "auth!=null && ((auth.uid===$uid && (!newData.exists() || (root.child('users').child($uid).child('panelDisabled').val()!==true && newData.child('key').isString() && newData.child('key').val()===root.child('panelInvites').child($uid).child('key').val()))) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))"
+      }
+    },
+    "loginMap": {
+      ".read": true,
+      "$k": {
+        ".write": "auth!=null && (!data.exists() || (root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))",
+        ".validate": "newData.isString()"
+      }
+    },
+    "referralCodes": {
+      ".read": true,
+      "$k": {
+        ".write": "auth!=null && (!data.exists() || (root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))"
+      }
+    },
+    "referrals": {
+      "$ref": {
+        ".read": "auth!=null && (auth.uid===$ref || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true)))",
+        "$uid": {
+          ".write": "auth!=null && ((auth.uid===$uid && !data.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()))"
+        }
+      }
+    },
+    "referralStats": {
+      ".read": true,
+      ".indexOn": [
+        "count"
+      ],
+      "$ref": {
+        ".write": "(auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && newData.child('count').isNumber() && ((data.child('count').exists() && newData.child('count').val()===data.child('count').val()+1) || (!data.child('count').exists() && newData.child('count').val()===1)) && !root.child('referrals').child($ref).child(auth.uid).exists() && newData.parent().parent().child('referrals').child($ref).child(auth.uid).exists())",
+        ".validate": "newData.hasChildren(['username','count']) && newData.child('username').isString() && newData.child('username').val().length<=30 && newData.child('count').isNumber() && newData.child('count').val()>=0"
+      }
+    },
+    "rewards": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true)))",
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_reward').val()===true))"
+      }
+    },
+    "sections": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$id": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_delete').val()===true && !newData.exists()))"
+      }
+    },
+    "games": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$id": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_delete').val()===true && !newData.exists()))"
+      }
+    },
+    "banners": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$id": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('banners_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('banners_delete').val()===true && !newData.exists()))"
+      }
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "worldChatIcon": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('settings_manage').val()===true)) || (auth!=null && root.child('worldChat').child('admins').child(auth.uid).exists() && newData.isString() && newData.val().beginsWith('dbimg:') && newData.val().length < 60)"
+      },
+      "$key": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('settings_manage').val()===true))"
+      }
+    },
+    "secrets": {
+      ".read": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()"
+    },
+    "depositRequests": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid",
+        "$id": {
+          ".write": "auth!=null && ((auth.uid===$uid && !data.exists() && newData.child('uid').val()===auth.uid && newData.child('status').val()==='pending') || (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true)) && data.child('status').val()==='pending'))",
+          ".validate": "newData.hasChildren(['uid','amount','utr','status','ts']) && newData.child('amount').isNumber() && newData.child('amount').val()>=1 && newData.child('amount').val()<=1000000 && newData.child('utr').isString() && (newData.child('utr').val()==='' || newData.child('utr').val().matches(/^[A-Za-z0-9]{8,30}$/)) && (newData.child('status').val()==='pending' || newData.child('status').val()==='approved' || newData.child('status').val()==='rejected')"
+        }
+      }
+    },
+    "depositUtrs": {
+      "$utr": {
+        ".write": "auth!=null && !data.exists() && newData.isString()",
+        ".validate": "$utr.matches(/^[A-Za-z0-9]{8,30}$/)"
+      }
+    },
+    "depositProofs": {
+      "$uid": {
+        "$id": {
+          ".read": "auth!=null && (auth.uid===$uid || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+          ".write": "auth!=null && auth.uid===$uid && !data.exists() && newData.isString()",
+          ".validate": "newData.isString() && newData.val().length < 700000"
+        }
+      }
+    },
+    "videoData": {
+      ".read": true,
+      "$id": {
+        "$chunk": {
+          ".write": "auth!=null && (root.child('users').child(auth.uid).child('role').val()==='admin' || root.child('users').child(auth.uid).child('role').val()==='staff') && root.child('panelLogin').child(auth.uid).exists()",
+          ".validate": "newData.isString() && newData.val().length < 300000"
+        }
+      }
+    },
+    "imageData": {
+      ".read": true,
+      "$id": {
+        ".write": "(auth!=null && root.child('worldChat').child('admins').child(auth.uid).exists() && !data.exists() && newData.isString()) || (auth!=null && (root.child('users').child(auth.uid).child('role').val()==='admin' || root.child('users').child(auth.uid).child('role').val()==='staff') && root.child('panelLogin').child(auth.uid).exists())",
+        ".validate": "newData.isString() && newData.val().length < 800000"
+      }
+    },
+    "announcements": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$id": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('announcements_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('announcements_delete').val()===true && !newData.exists()))"
+      }
+    },
+    "virtualSlots": {
+      ".read": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$mid": {
+        ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+        "$slot": {
+          ".validate": "newData.hasChildren(['uid','username','ign','ts','type','matchId','slot']) && newData.child('uid').val()==='' && newData.child('username').isString() && newData.child('username').val().length>=1 && newData.child('username').val().length<=40 && newData.child('ign').isString() && newData.child('type').val()==='VIRTUAL' && newData.child('matchId').val()===$mid && newData.child('slot').val()===$slot"
+        }
+      }
+    },
+    "matches": {
+      ".read": true,
+      ".indexOn": [
+        "gameId",
+        "status"
+      ],
+      "$mid": {
+        ".write": "(auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_delete').val()===true && !newData.exists())",
+        "slots": {
+          "$s": {
+            ".write": "auth!=null && ((!data.exists() && newData.child('uid').val()===auth.uid && (root.child('matches').child($mid).child('hasAccessCode').val()!==true || root.child('matchAccessOk').child($mid).child(auth.uid).val()===root.child('rooms').child($mid).child('accessCode').val())) || (data.child('uid').val()===auth.uid && !newData.exists()) || (data.exists() && data.child('uid').val()===auth.uid && newData.child('uid').val()===auth.uid && newData.child('username').val()===data.child('username').val() && newData.child('ign').isString() && newData.child('ign').val().length<=30 && root.child('matches').child($mid).child('status').val()==='upcoming') || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)"
+          }
+        },
+        "joined": {
+          ".write": "auth!=null && ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true || !data.exists() || newData.val() >= data.val())"
+        },
+        "results": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "resultDeclared": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "comment": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        },
+        "status": {
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true))"
+        }
+      }
+    },
+    "rooms": {
+      "$mid": {
+        ".read": "auth!=null && ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true || root.child('joinedByUser').child(auth.uid).child($mid).exists())",
+        ".write": "(auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_delete').val()===true && !newData.exists())"
+      }
+    },
+    "joinedByUser": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true)))",
+        ".write": "auth!=null && auth.uid===$uid"
+      }
+    },
+    "transactions": {
+      "$uid": {
+        ".indexOn": [
+          "ts"
+        ],
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('transactions_view').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_view').val()===true)))",
+        ".write": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('players_reward').val()===true)))"
+      }
+    },
+    "deposits": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      "$id": {
+        ".write": false
+      }
+    },
+    "withdrawals": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_export').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      "$id": {
+        ".write": "auth!=null && ((!data.exists() && newData.child('uid').val()===auth.uid && newData.child('status').val()==='pending') || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('withdrawals_review').val()===true)"
+      }
+    },
+    "leaderboard": {
+      ".read": true,
+      ".indexOn": [
+        "weekly",
+        "monthly",
+        "total"
+      ],
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('ranking_reset').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('leaderboard_manage').val()===true))"
+    },
+    "leaderboardCycle": {
+      ".read": true,
+      "$cycle": {
+        ".indexOn": [
+          "score"
+        ]
+      },
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('ranking_reset').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('leaderboard_manage').val()===true))"
+    },
+    "leaderboardGame": {
+      ".read": true,
+      "$cycle": {
+        "$game": {
+          ".indexOn": [
+            "score"
+          ]
+        }
+      },
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('ranking_reset').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('leaderboard_manage').val()===true))"
+    },
+    "appConfig": {
+      ".read": true,
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('app_control').val()===true))"
+    },
+    "adminLogs": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('activity_view').val()===true))",
+      ".indexOn": [
+        "ts"
+      ],
+      "$id": {
+        ".write": "auth!=null && !data.exists() && ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists()))"
+      }
+    },
+    "leaderboardConfig": {
+      ".read": true,
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('leaderboard_manage').val()===true))",
+      "auto": {
+        ".validate": "newData.isBoolean()"
+      },
+      "period": {
+        ".validate": "newData.isString() && (newData.val()==='daily' || newData.val()==='weekly' || newData.val()==='monthly')"
+      },
+      "topN": {
+        ".validate": "newData.isNumber() && newData.val()>=1 && newData.val()<=100"
+      }
+    },
+    "worldChat": {
+      "messages": {
+        ".read": "auth!=null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth!=null && ((!data.exists() && newData.exists() && newData.child('uid').val()===auth.uid && root.child('settings').child('worldChatOn').val()==='true' && root.child('users').child(auth.uid).child('banned').val()!==true && (!root.child('worldChat').child('mutes').child(auth.uid).exists() || root.child('worldChat').child('mutes').child(auth.uid).child('until').val() < now)) || (!newData.exists() && ((auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))) || (root.child('worldChat').child('admins').child(auth.uid).exists() || root.child('users').child(auth.uid).child('role').val()==='admin'))))",
+          ".validate": "newData.hasChildren(['uid','username','text','ts']) && newData.child('text').isString() && newData.child('text').val().length>=1 && newData.child('text').val().length<=200 && newData.child('ts').val()===now && newData.child('username').val()===root.child('users').child(auth.uid).child('username').val() && (!newData.child('role').exists() || newData.child('role').val()==='user' || (newData.child('role').val()==='owner' && root.child('users').child(auth.uid).child('role').val()==='admin') || (newData.child('role').val()==='admin' && (root.child('users').child(auth.uid).child('role').val()==='staff' || root.child('worldChat').child('admins').child(auth.uid).exists()))) && (!newData.child('kind').exists() || newData.child('kind').val()==='text' || (newData.child('kind').val()==='sticker' && newData.child('sticker').isString()) || (newData.child('kind').val()==='voice' && newData.child('voiceId').isString() && newData.child('durationMs').isNumber()) || (newData.child('kind').val()==='image' && newData.child('imageId').isString()))",
+          "kind": {
+            ".validate": "newData.isString() && (newData.val()==='text' || newData.val()==='sticker' || newData.val()==='voice' || newData.val()==='image')"
+          },
+          "sticker": {
+            ".validate": "newData.isString() && newData.val().length<=30"
+          },
+          "voiceId": {
+            ".validate": "newData.isString() && newData.val().length<=40 && root.child('worldChat').child('voice').child(newData.val()).exists()"
+          },
+          "durationMs": {
+            ".validate": "newData.isNumber() && newData.val()>=0 && newData.val()<=65000"
+          },
+          "imageId": {
+            ".validate": "newData.isString() && newData.val().length<=40 && root.child('worldChat').child('images').child(newData.val()).exists()"
+          }
+        }
+      },
+      "last": {
+        "$uid": {
+          ".write": "auth!=null && auth.uid===$uid && newData.isNumber() && newData.val()===now && (!data.exists() || now - data.val() >= 2500)"
+        }
+      },
+      "mutes": {
+        ".read": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+        "$uid": {
+          ".read": "auth!=null && auth.uid===$uid",
+          ".write": "(auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))) || (auth!=null && (root.child('worldChat').child('admins').child(auth.uid).exists() || root.child('users').child(auth.uid).child('role').val()==='admin') && root.child('users').child($uid).child('role').val()!=='admin' && root.child('users').child($uid).child('role').val()!=='staff' && !root.child('worldChat').child('admins').child($uid).exists())"
+        }
+      },
+      "reports": {
+        ".read": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+        "$id": {
+          ".write": "(auth!=null && !data.exists() && newData.child('byUid').val()===auth.uid) || (auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true)))",
+          ".validate": "newData.hasChildren(['msgId','byUid','ts']) && newData.child('text').val().length<=200"
+        }
+      },
+      "admins": {
+        ".read": "auth!=null",
+        "$uid": {
+          ".write": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('role').val()==='admin'"
+        }
+      },
+      "online": {
+        ".read": "auth!=null",
+        "$uid": {
+          ".write": "auth!=null && auth.uid===$uid",
+          ".validate": "!newData.exists() || newData.isNumber()"
+        }
+      },
+      "members": {
+        ".read": "auth!=null",
+        "$uid": {
+          ".write": "auth!=null && ((auth.uid===$uid && !data.exists()) || (auth!=null && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('role').val()==='admin'))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['name','owner','ts']) && newData.child('name').val()===root.child('users').child($uid).child('username').val() && newData.child('owner').val()===(root.child('users').child($uid).child('role').val()==='admin'))"
+        }
+      },
+      "voice": {
+        ".read": "auth!=null",
+        "$vid": {
+          ".write": "auth!=null && !newData.exists() && ((auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))) || root.child('worldChat').child('admins').child(auth.uid).exists())",
+          "$chunk": {
+            ".write": "auth!=null && ((!data.exists() && newData.exists() && root.child('settings').child('worldChatOn').val()==='true' && root.child('users').child(auth.uid).child('banned').val()!==true && (!root.child('worldChat').child('mutes').child(auth.uid).exists() || root.child('worldChat').child('mutes').child(auth.uid).child('until').val() < now)) || (!newData.exists() && ((auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))) || root.child('worldChat').child('admins').child(auth.uid).exists())) || (!data.exists() && newData.exists() && $vid.beginsWith('clip_') && (auth!=null && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('role').val()==='admin')))",
+            ".validate": "$chunk.matches(/^c[0-5]$/) && newData.isString() && newData.val().length<300000"
+          }
+        }
+      },
+      "clips": {
+        ".read": "auth!=null",
+        "$id": {
+          ".write": "auth!=null && (auth!=null && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('role').val()==='admin')",
+          ".validate": "newData.hasChildren(['name','durationMs','ts']) && newData.child('name').isString() && newData.child('name').val().length>=1 && newData.child('name').val().length<=30 && newData.child('durationMs').isNumber() && newData.child('durationMs').val()<=30000"
+        }
+      },
+      "images": {
+        "$id": {
+          ".read": "auth!=null",
+          ".write": "auth!=null && ((!data.exists() && newData.exists() && root.child('settings').child('worldChatOn').val()==='true' && root.child('users').child(auth.uid).child('banned').val()!==true && (!root.child('worldChat').child('mutes').child(auth.uid).exists() || root.child('worldChat').child('mutes').child(auth.uid).child('until').val() < now)) || (!newData.exists() && ((auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))) || root.child('worldChat').child('admins').child(auth.uid).exists() || root.child('users').child(auth.uid).child('role').val()==='admin')))",
+          ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length<400000"
+        }
+      }
+    },
+    "voiceMessages": {
+      ".read": "auth!=null",
+      ".indexOn": [
+        "ts"
+      ],
+      "$id": {
+        ".write": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+        ".validate": "newData.child('ts').isNumber() && newData.child('chunks').isNumber() && newData.child('chunks').val()>=1 && newData.child('chunks').val()<=6 && newData.child('durationMs').isNumber() && newData.child('durationMs').val()<=65000",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length<=120"
+        },
+        "body": {
+          ".validate": "newData.isString() && newData.val().length<=1000"
+        }
+      }
+    },
+    "voiceDirect": {
+      ".read": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+          ".validate": "newData.child('ts').isNumber() && newData.child('chunks').isNumber() && newData.child('chunks').val()>=1 && newData.child('chunks').val()<=6 && newData.child('durationMs').isNumber() && newData.child('durationMs').val()<=65000",
+          "title": {
+            ".validate": "newData.isString() && newData.val().length<=120"
+          },
+          "body": {
+            ".validate": "newData.isString() && newData.val().length<=1000"
+          }
+        }
+      }
+    },
+    "voiceData": {
+      "$id": {
+        ".read": "auth!=null",
+        ".write": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || (root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('users').child(auth.uid).child('staffPermissions').child('notifications_send').val()===true))",
+        "$chunk": {
+          ".validate": "newData.isString() && newData.val().length<300000"
+        }
+      }
+    },
+    "voiceHidden": {
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid",
+        ".write": "auth!=null && auth.uid===$uid",
+        "$id": {
+          ".validate": "newData.val()===true"
+        }
+      }
+    },
+    "adminNotificationTokens": {
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid && ((root.child('users').child(auth.uid).child('role').val()==='admin' || root.child('users').child(auth.uid).child('role').val()==='staff') && root.child('panelLogin').child(auth.uid).exists())",
+        "$tokenHash": {
+          ".write": "auth!=null && auth.uid===$uid && ((root.child('users').child(auth.uid).child('role').val()==='admin' || root.child('users').child(auth.uid).child('role').val()==='staff') && root.child('panelLogin').child(auth.uid).exists())",
+          ".validate": "newData.hasChildren(['token','updatedAt']) && newData.child('token').isString() && newData.child('token').val().length<=4096 && newData.child('updatedAt').isNumber()"
+        }
+      }
+    },
+    "supportTickets": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true))",
+      ".write": false,
+      "$uid": {
+        ".read": "(auth!=null && auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)))",
+        "$ticketId": {
+          ".read": "(auth!=null && auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)))",
+          ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || (auth!=null && auth.uid===$uid && !data.exists() && newData.child('uid').val()===$uid && newData.child('username').val()===root.child('users').child(auth.uid).child('username').val() && newData.child('status').val()==='open' && newData.child('messages').hasChildren())",
+          ".validate": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || (newData.child('uid').val()===$uid && newData.child('username').val()===root.child('users').child(auth.uid).child('username').val() && newData.child('subject').isString() && newData.child('category').isString() && (newData.child('status').val()==='open' || newData.child('status').val()==='in_progress' || newData.child('status').val()==='resolved' || newData.child('status').val()==='closed') && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber() && newData.child('messages').hasChildren())",
+          "lastMessage": {
+            ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || (auth!=null && auth.uid===$uid && root.child('supportTickets').child($uid).child($ticketId).child('status').val()!=='closed')"
+          },
+          "updatedAt": {
+            ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || (auth!=null && auth.uid===$uid && root.child('supportTickets').child($uid).child($ticketId).child('status').val()!=='closed')"
+          },
+          "status": {
+            ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || (auth!=null && auth.uid===$uid && data.val()==='resolved' && newData.val()==='open')"
+          },
+          "messages": {
+            ".read": "(auth!=null && auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)))",
+            "$messageId": {
+              ".write": "!data.exists() && auth!=null && newData.child('senderUid').val()===auth.uid && (auth.uid===$uid && newData.child('senderRole').val()==='user' || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) && newData.child('senderRole').val()===root.child('users').child(auth.uid).child('role').val()) && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || root.child('supportTickets').child($uid).child($ticketId).child('status').val()!=='closed')",
+              ".validate": "newData.hasChildren(['senderUid','senderName','senderRole','body','createdAt']) && newData.child('senderUid').val()===auth.uid && newData.child('senderName').isString() && newData.child('body').isString() && newData.child('createdAt').isNumber() && (auth.uid===$uid && newData.child('senderRole').val()==='user' || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) && newData.child('senderRole').val()===root.child('users').child(auth.uid).child('role').val())"
+            }
+          },
+          "$other": {
+            ".validate": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('support_manage').val()===true)) || ($other==='uid' || $other==='username' || $other==='subject' || $other==='category' || $other==='status' || $other==='createdAt' || $other==='updatedAt' || $other==='lastMessage' || $other==='messages')"
+          }
+        }
+      }
+    },
+    "panelSecrets": {
+      ".read": "auth!=null && root.child('panelLogin').child(auth.uid).exists() && (root.child('users').child(auth.uid).child('role').val()==='admin' || root.child('users').child(auth.uid).child('role').val()==='staff')",
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()"
+    },
+    "pvpGames": {
+      ".read": true,
+      ".write": "auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()",
+      "$id": {
+        ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_manage').val()===true && newData.exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('games_delete').val()===true && !newData.exists()))"
+      }
+    },
+    "pvpMatches": {
+      ".read": "auth!=null",
+      ".indexOn": [
+        "status",
+        "gameId",
+        "creatorUid"
+      ],
+      "$mid": {
+        ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('creatorUid').val()===auth.uid && newData.child('status').val()==='upcoming'))",
+        ".validate": "newData.hasChildren(['gameId','creatorUid','entryFee','prize','slots','status','players'])",
+        "entryFee": {
+          ".validate": "newData.isNumber() && newData.val()>=5"
+        },
+        "slots": {
+          ".validate": "newData.isNumber() && newData.val()>=2 && newData.val()<=20"
+        },
+        "prize": {
+          ".validate": "newData.isNumber() && newData.val()>=0 && newData.val() <= newData.parent().child('entryFee').val()*newData.parent().child('slots').val()"
+        },
+        "status": {
+          ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (data.parent().child('creatorUid').val()===auth.uid && data.val()==='upcoming' && newData.val()==='ongoing'))",
+          ".validate": "newData.val()==='upcoming' || newData.val()==='ongoing' || newData.val()==='completed' || newData.val()==='cancelled'"
+        },
+        "players": {
+          ".validate": "newData.hasChildren(['s1']) && newData.child('s1').child('uid').isString()",
+          "s1": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=1))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s2": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=2) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s3": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=3) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s4": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=4) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s5": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=5) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s6": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=6) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s7": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=7) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s8": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=8) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s9": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=9) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s10": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=10) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s11": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=11) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s12": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=12) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s13": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=13) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s14": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=14) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s15": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=15) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s16": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=16) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s17": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=17) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s18": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=18) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s19": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=19) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          },
+          "s20": {
+            ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (!data.exists() && newData.child('uid').val()===auth.uid && (root.child('pvpMatches').child($mid).child('status').val()==='upcoming' || root.child('pvpMatches').child($mid).child('status').val()==='ongoing') && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('slots').val()>=20) || (data.child('uid').val()===auth.uid && !newData.exists() && now - data.child('ts').val() < 60000))",
+            ".validate": "newData.hasChildren(['uid','username','ts'])",
+            "ign": {
+              ".write": "auth!=null && data.parent().child('uid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+              ".validate": "newData.isString() && newData.val().length>0 && newData.val().length<=30"
+            }
+          }
+        },
+        "reports": {
+          "$uid": {
+            ".write": "auth!=null && auth.uid===$uid && !data.exists() && root.child('pvpByUser').child(auth.uid).child($mid).exists() && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'",
+            ".validate": "newData.child('uid').val()===$uid && newData.hasChildren(['uid','username','ts'])"
+          }
+        }
+      }
+    },
+    "pvpRooms": {
+      "$mid": {
+        ".read": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || root.child('pvpByUser').child(auth.uid).child($mid).exists())",
+        ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (root.child('pvpMatches').child($mid).child('creatorUid').val()===auth.uid && root.child('pvpMatches').child($mid).child('resultDeclared').val()!==true && root.child('pvpMatches').child($mid).child('status').val()!=='cancelled'))",
+        ".validate": "newData.hasChildren(['roomId']) && newData.child('roomId').val().length<=60"
+      }
+    },
+    "pvpByUser": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)))",
+        ".write": "auth!=null && auth.uid===$uid"
+      }
+    },
+    "pvpShots": {
+      "$mid": {
+        "$uid": {
+          ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || root.child('pvpByUser').child(auth.uid).child($mid).exists())",
+          ".write": "auth!=null && auth.uid===$uid && !data.exists() && newData.isString() && root.child('pvpByUser').child(auth.uid).child($mid).exists()",
+          ".validate": "newData.isString() && newData.val().length < 700000"
+        }
+      }
+    },
+    "matchCounter": {
+      ".read": "auth!=null",
+      ".write": "auth!=null && ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true))",
+      ".validate": "newData.isNumber() && newData.val()>=0"
+    },
+    "pvpCounter": {
+      ".read": "auth!=null",
+      ".write": "auth!=null && (((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('results_manage').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('matches_manage').val()===true)) || (newData.isNumber() && ((!data.exists() && newData.val()===1) || newData.val()===data.val()+1)))",
+      ".validate": "newData.isNumber() && newData.val()>=0"
+    },
+    "spinConfig": {
+      ".read": "auth!=null",
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))"
+    },
+    "spinUserCfg": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))",
+      ".write": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))",
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid"
+      }
+    },
+    "spinState": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true)))",
+        ".write": "auth!=null && auth.uid===$uid",
+        ".validate": "newData.hasChildren(['init','consumed','dayStart','dayCount','totalSpins','totalEarned','lastAt','lastNormalAt','lastAmount','lastBonus','lastWallet']) && newData.child('init').val()===true && newData.child('consumed').isNumber() && newData.child('consumed').val()>=0 && newData.child('dayStart').isNumber() && newData.child('dayStart').val()>=0 && newData.child('dayCount').isNumber() && newData.child('dayCount').val()>=0 && newData.child('totalSpins').isNumber() && newData.child('totalSpins').val()>=0 && newData.child('totalEarned').isNumber() && newData.child('totalEarned').val()>=0 && newData.child('lastAt').isNumber() && newData.child('lastAt').val()>=0 && newData.child('lastNormalAt').isNumber() && newData.child('lastNormalAt').val()>=0 && newData.child('lastAmount').isNumber() && newData.child('lastAmount').val()>=0 && newData.child('lastBonus').isBoolean() && newData.child('lastWallet').isString() && ((!data.exists() && newData.child('lastAt').val()===0 && newData.child('lastAmount').val()===0 && newData.child('totalSpins').val()===0 && newData.child('totalEarned').val()===0 && newData.child('dayCount').val()===0 && newData.child('dayStart').val()===0 && newData.child('lastNormalAt').val()===0 && newData.child('lastBonus').val()===false) || (data.exists() && newData.child('lastAmount').val()>0 && newData.child('lastAmount').val()<=(root.child('spinConfig').child('maxReward').exists() ? root.child('spinConfig').child('maxReward').val() : 1000) && root.child('spinConfig').child('enabled').val()===true && root.child('spinUserCfg').child($uid).child('blocked').val()!==true && ((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)>0 ? newData.child('lastAmount').val()<=((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)<=5?5:((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)<=10?10:((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)<=25?25:((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)<=50?50:((root.child('spinUserCfg').child($uid).child('lock').exists() ? root.child('spinUserCfg').child($uid).child('lock').val() : 0)<=80?150:100000000))))) : (newData.child('lastAmount').val()<=((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=0?2:((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=5?5:((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=10?10:((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=25?25:((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=50?50:((root.child('spinConfig').child('lockAll').exists() ? root.child('spinConfig').child('lockAll').val() : 0)<=80?150:100000000)))))))) && newData.child('lastWallet').val()===(root.child('spinConfig').child('creditTo').val()==='winning' ? 'winning' : 'deposited') && newData.child('totalSpins').val()===data.child('totalSpins').val()+1 && newData.child('totalEarned').val()===data.child('totalEarned').val()+newData.child('lastAmount').val() && newData.child('lastAt').val()===now && ((newData.child('lastBonus').val()===true && root.child('spinBonus').child($uid).val()>0 && newData.child('consumed').val()===data.child('consumed').val() && newData.child('dayCount').val()===data.child('dayCount').val() && newData.child('dayStart').val()===data.child('dayStart').val() && newData.child('lastNormalAt').val()===data.child('lastNormalAt').val()) || (newData.child('lastBonus').val()===false && newData.child('lastNormalAt').val()===now && newData.child('consumed').val()===data.child('consumed').val()+(root.child('spinConfig').child('matchesRequired').exists() ? root.child('spinConfig').child('matchesRequired').val() : 8) && newData.child('dayStart').val()===((now+19800000)-((now+19800000)%86400000)) && newData.child('dayCount').val()===((data.child('dayStart').val()===newData.child('dayStart').val()) ? data.child('dayCount').val() : 0)+1 && ((root.child('spinConfig').child('dailyLimit').exists() ? root.child('spinConfig').child('dailyLimit').val() : 3)==0 || newData.child('dayCount').val()<=(root.child('spinConfig').child('dailyLimit').exists() ? root.child('spinConfig').child('dailyLimit').val() : 3)) && ((root.child('spinConfig').child('cooldownDays').exists() ? root.child('spinConfig').child('cooldownDays').val() : 0)==0 || data.child('lastNormalAt').val()+(root.child('spinConfig').child('cooldownDays').exists() ? root.child('spinConfig').child('cooldownDays').val() : 0)*86400000<=now)))))",
+        "$other": {
+          ".validate": false
+        },
+        "init": {
+          ".validate": true
+        },
+        "consumed": {
+          ".validate": true
+        },
+        "dayStart": {
+          ".validate": true
+        },
+        "dayCount": {
+          ".validate": true
+        },
+        "totalSpins": {
+          ".validate": true
+        },
+        "totalEarned": {
+          ".validate": true
+        },
+        "lastAt": {
+          ".validate": true
+        },
+        "lastNormalAt": {
+          ".validate": true
+        },
+        "lastAmount": {
+          ".validate": true
+        },
+        "lastBonus": {
+          ".validate": true
+        },
+        "lastWallet": {
+          ".validate": true
+        }
+      }
+    },
+    "spinBonus": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))",
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true)))",
+        ".write": "(((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))) || (auth!=null && auth.uid===$uid && data.exists() && data.val()>0 && (newData.val()===data.val()-1 || (data.val()===1 && !newData.exists())) && newData.parent().parent().child('spinState').child($uid).child('lastBonus').val()===true && newData.parent().parent().child('spinState').child($uid).child('lastAt').val()===now)",
+        ".validate": "newData.isNumber() && newData.val()>=0 && newData.val()<=1000 && newData.val()%1===0"
+      }
+    },
+    "spinHistory": {
+      "$uid": {
+        ".read": "auth!=null && (auth.uid===$uid || ((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true)))",
+        ".indexOn": [
+          "ts"
+        ],
+        "$k": {
+          ".write": "auth!=null && auth.uid===$uid && !data.exists()",
+          ".validate": "newData.hasChildren(['amount','ts']) && newData.child('amount').isNumber() && newData.child('amount').val()>0 && newData.child('ts').val()===now"
+        }
+      }
+    },
+    "spinLog": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('spin_manage').val()===true))",
+      ".indexOn": [
+        "ts"
+      ],
+      "$k": {
+        ".write": "auth!=null && !data.exists() && newData.child('uid').val()===auth.uid",
+        ".validate": "newData.hasChildren(['uid','amount','ts']) && newData.child('amount').isNumber() && newData.child('ts').val()===now"
+      }
+    },
+    "paymentGateways": {
+      ".read": "auth!=null",
+      ".write": "(auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists())",
+      "$gw": {
+        ".validate": "newData.hasChildren(['enabled'])"
+      }
+    },
+    "paymentOrders": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('balance_adjust').val()===true) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      ".indexOn": [
+        "status",
+        "ts",
+        "uid"
+      ],
+      "$uid": {
+        ".read": "auth!=null && auth.uid===$uid",
+        ".indexOn": [
+          "ts"
+        ],
+        "$orderId": {
+          ".write": false
+        }
+      }
+    },
+    "paymentLogs": {
+      ".read": "((auth!=null && root.child('users').child(auth.uid).child('role').val()==='admin' && root.child('panelLogin').child(auth.uid).exists()) || (auth!=null && root.child('users').child(auth.uid).child('role').val()==='staff' && root.child('panelLogin').child(auth.uid).exists() && root.child('users').child(auth.uid).child('staffPermissions').child('dashboard_view').val()===true))",
+      ".indexOn": [
+        "ts"
+      ],
+      "$id": {
+        ".write": false
+      }
+    },
+    "matchAccessOk": {
+      "$mid": {
+        "$uid": {
+          ".read": "auth!=null && auth.uid===$uid",
+          ".write": "auth!=null && auth.uid===$uid && newData.isString() && newData.val()===root.child('rooms').child($mid).child('accessCode').val()"
+        }
+      }
+    }
+  }
+}

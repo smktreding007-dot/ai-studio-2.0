@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="UnusedResources" severity="ignore" />
+    <issue id="IconLauncherShape" severity="ignore" />
+    <issue id="IconDuplicates" severity="ignore" />
+    <issue id="VectorPath" severity="ignore" />
+    <issue id="ModifierParameter" severity="ignore" />
+    <issue id="DiscouragedApi" severity="ignore" />
+    <issue id="SelectedPhotoAccess" severity="ignore" />
+</lint>
