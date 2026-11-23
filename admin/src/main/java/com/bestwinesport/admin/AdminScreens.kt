@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.filled.Language
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -297,8 +300,15 @@ fun FormScreen(cfg: CrudCfg, id: String, row: Map<String, Any?>, close: () -> Un
         mutableStateMapOf<String, String>().also { m -> cfg.fields.forEach { f -> m[f.k] = toStr(f, row[f.k] ?: pre[f.k]) } }
     }
     var busy by remember { mutableStateOf(false) }
+    var origRoomId by remember(id) { mutableStateOf("") }
+    var origRoomPass by remember(id) { mutableStateOf("") }
     LaunchedEffect(id) {
-        if (cfg.split.isNotEmpty() && id.isNotBlank()) { val r = mp(AR.get("rooms/$id")); cfg.split.forEach { vals[it] = str(r[it]) } }
+        if (cfg.split.isNotEmpty() && id.isNotBlank()) {
+            val r = mp(AR.get("rooms/$id"))
+            cfg.split.forEach { vals[it] = str(r[it]) }
+            origRoomId = str(r["roomId"]).trim()
+            origRoomPass = str(r["roomPass"]).trim()
+        }
     }
     Column(Modifier.fillMaxSize()) {
         ABar(if (id.isBlank()) "New ${cfg.single}" else "Edit ${cfg.single}", null) { TextButton(close) { Text("CLOSE", color = Color.White) } }
@@ -361,8 +371,34 @@ fun FormScreen(cfg: CrudCfg, id: String, row: Map<String, Any?>, close: () -> Un
                         ups["matches/$nid/cancelAt"] = AR.cancelAtOf(st, mp0, af)
                     }
                     if (id.isBlank()) { cfg.onNew.forEach { (k, v) -> ups["${cfg.path}/$nid/$k"] = v }; if (cfg.stamp) ups["${cfg.path}/$nid/ts"] = System.currentTimeMillis() }
+                    val origStatus = str(row["status"]).trim().lowercase()
+                    val nowStatus = (vals["status"] ?: "").trim().lowercase()
+                    val newRoomId = (vals["roomId"] ?: "").trim()
+                    val newRoomPass = (vals["roomPass"] ?: "").trim()
+                    val sendAutoIdp = cfg.key == "matches" &&
+                        nowStatus == "ongoing" &&
+                        (newRoomId.isNotBlank() || newRoomPass.isNotBlank()) &&
+                        (origStatus != "ongoing" || newRoomId != origRoomId || newRoomPass != origRoomPass)
                     AR.db.updateChildren(ups).await()
-                    ctx.toast("Saved"); close()
+                    if (sendAutoIdp) {
+                        if (Fcm.sa(ctx).isNotBlank()) {
+                            val mTitle = (vals["title"] ?: "").trim()
+                            val mNo = str(ups["matches/$nid/matchNo"] ?: vals["matchNo"]).trim()
+                            val header = listOfNotNull(mTitle.takeIf { it.isNotBlank() }, mNo.takeIf { it.isNotBlank() }?.let { "#$it" }).joinToString(" ")
+                            val notifBody = buildString {
+                                if (header.isNotBlank()) appendLine(header)
+                                if (newRoomId.isNotBlank()) appendLine("Room ID: $newRoomId")
+                                if (newRoomPass.isNotBlank()) append("Password: $newRoomPass")
+                            }.trim()
+                            val pushErr = Fcm.send(ctx, "m_$nid", true, "Match IDP Updated", notifBody, "")
+                            ctx.toast(if (pushErr == null) "Saved & IDP notification sent to match players!" else "Saved (IDP notify failed: $pushErr)")
+                        } else {
+                            ctx.toast("Saved (Add push key in Send notification for auto IDP push)")
+                        }
+                    } else {
+                        ctx.toast("Saved")
+                    }
+                    close()
                 } catch (e: Exception) { ctx.toast(e.message ?: "Save failed") }
                 busy = false
             }
@@ -460,12 +496,12 @@ fun ResultsScreen(nav: NavController, mid: String) {
     // Search inside the players of this match (username / in-game name / team): the kills + prize already typed for other players are kept while searching.
     var search by remember(mid) { mutableStateOf("") }
     val slots = mp(m["slots"]); val res = mp(m["results"]); val done = m["resultDeclared"] == true
-    val q = search.trim()
+    val q = cleanSearchQuery(search).removePrefix("@").trim()
     // Searching does not hide anyone: players matching the username / in-game name come to the TOP, everybody else stays below them.
     val matchedKeys = remember(slots, q) {
         if (q.isEmpty()) emptySet() else slots.entries.filter { e ->
             val sl = mp(e.value)
-            listOf(str(sl["username"]), str(sl["ign"]), e.key.replace("t", "Team ").replace("_", " - ")).any { it.contains(q, ignoreCase = true) }
+            listOf(str(sl["username"]), str(sl["ign"]), str(sl["uid"]), str(sl["phone"]), e.key.replace("t", "Team ").replace("_", " - ")).any { it.contains(q, ignoreCase = true) }
         }.map { it.key }.toSet()
     }
     val shownSlots = remember(slots, matchedKeys) {
@@ -631,8 +667,10 @@ fun DepositRequestsScreen(nav: NavController) {
 @Composable
 fun UsersScreen(nav: NavController) {
     val ctx = LocalContext.current; val scope = rememberCoroutineScope()
-    val uN by rflow(init = null as Map<String, Any?>?) { AR.watchQ(AR.db.child("users").orderByChild("createdAt").limitToLast(300)) }
+    val uN by rflow(init = null as Map<String, Any?>?) { AR.watch("users") }
     var q by remember { mutableStateOf("") }
+    var extraUsers by remember { mutableStateOf<Map<String, Map<String, Any?>>>(emptyMap()) }
+    var searchingRemote by remember { mutableStateOf(false) }
     var sel by remember { mutableStateOf<String?>(null) }
     var ask by remember { mutableStateOf<String?>(null) }
     var roleDlg by remember { mutableStateOf(false) }
@@ -640,31 +678,79 @@ fun UsersScreen(nav: NavController) {
     var banDlg by remember { mutableStateOf<String?>(null) }
     var banReasonText by remember { mutableStateOf("") }
     var themeValue by remember { mutableStateOf(PlayerThemeChoices.defaultId) }
+    val listState = rememberLazyListState()
+    LaunchedEffect(q) {
+        listState.scrollToItem(0)
+        val term = cleanSearchQuery(q).removePrefix("@").trim()
+        if (term.length < 2) {
+            extraUsers = emptyMap()
+            searchingRemote = false
+            return@LaunchedEffect
+        }
+        delay(220)
+        searchingRemote = true
+        try {
+            extraUsers = AR.lookupPlayersDirect(term)
+        } finally {
+            searchingRemote = false
+        }
+    }
     val users = uN ?: return Column(Modifier.fillMaxSize()) { ABar("Players", nav); Loader() }
-    val rows = users.entries.sortedByDescending { num(mp(it.value)["createdAt"]) }
-        .filter { val u = mp(it.value); q.isBlank() || listOf("username", "phone", "email").any { k -> str(u[k]).contains(q, true) } }
+    val allUsers = remember(users, extraUsers) {
+        if (extraUsers.isEmpty()) users else users + extraUsers
+    }
+    val rows = remember(allUsers, q) {
+        val term = cleanSearchQuery(q)
+        allUsers.entries
+            .sortedByDescending { num(mp(it.value)["createdAt"]) }
+            .filter { entry ->
+                if (term.isEmpty()) true
+                else playerMatchesQuery(entry.key, mp(entry.value), term)
+            }
+    }
     Column(Modifier.fillMaxSize()) {
         ABar("Players", nav) {
             if (canAccess("players_export")) ABtn("EXPORT", color = Field, small = true) { shareCsv(ctx, "players", "username,phone,email,deposited,winning,role,banned,theme", rows.map { val u = mp(it.value); listOf(str(u["username"]), str(u["phone"]), str(u["email"]), str(u["deposited"]), str(u["winning"]), str(u["role"]), (u["banned"] == true).toString(), str(u["theme"])) }) }
             Spacer(Modifier.width(8.dp))
             if (Session.role == "admin") ABtn("+ NEW", color = Red, small = true) { nav.go("usercreate") }
         }
-        OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth().padding(12.dp), label = { Text("Search username / phone / email") }, singleLine = true)
-        LazyColumn(contentPadding = PaddingValues(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = q,
+            onValueChange = { q = it },
+            modifier = Modifier.fillMaxWidth().padding(12.dp, 12.dp, 12.dp, 4.dp).testTag("users_search_input"),
+            label = { Text("Search username / phone / email / name / UID") },
+            singleLine = true,
+            trailingIcon = { if (q.isNotEmpty()) TextButton({ q = "" }) { Text("CLEAR") } }
+        )
+        Text(
+            if (q.isBlank()) "Total players: ${allUsers.size}"
+            else "Found ${rows.size} of ${allUsers.size} players" + if (searchingRemote) " (searching...)" else "",
+            Modifier.padding(horizontal = 14.dp, vertical = 4.dp), color = Color.Gray, fontSize = 12.sp
+        )
+        if (rows.isEmpty()) Text("No matching players found.", Modifier.padding(24.dp), color = Color.Gray)
+        LazyColumn(state = listState, contentPadding = PaddingValues(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(rows, key = { it.key }) { e ->
                 val u = mp(e.value)
+                val titleText = playerDisplayTitle(e.key, u)
+                val fullName = (str(u["firstName"]) + " " + str(u["lastName"])).trim()
+                val phoneOrMail = str(u["phone"]).ifBlank { str(u["email"]) }
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardC).clickable { sel = e.key }.padding(12.dp)) {
-                    Row { Text(str(u["username"]), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                        Text(str(u["role"]).ifBlank { "user" } + if (u["banned"] == true) " • BANNED" else "", color = if (u["banned"] == true) Red else Color.Gray, fontSize = 12.sp) }
-                    Text("${str(u["phone"])}  •  Dep ₹${"%.2f".format(num(u["deposited"]))}  •  Win ₹${"%.2f".format(num(u["winning"]))}", color = Color.Gray, fontSize = 12.sp)
+                    Row {
+                        Text(
+                            if (fullName.isNotEmpty() && !fullName.equals(titleText, true)) "$titleText ($fullName)" else titleText,
+                            Modifier.weight(1f), fontWeight = FontWeight.SemiBold
+                        )
+                        Text(str(u["role"]).ifBlank { "user" } + if (u["banned"] == true) " • BANNED" else "", color = if (u["banned"] == true) Red else Color.Gray, fontSize = 12.sp)
+                    }
+                    Text("$phoneOrMail  •  Dep ₹${"%.2f".format(num(u["deposited"]))}  •  Win ₹${"%.2f".format(num(u["winning"]))}", color = Color.Gray, fontSize = 12.sp)
                 }
             }
         }
     }
     val uid = sel
     if (uid != null && ask == null && !roleDlg && themeDlg == null && banDlg == null) {
-        val u = mp(users[uid])
-        AlertDialog(onDismissRequest = { sel = null }, containerColor = DialogC, title = { Text(str(u["username"]), fontSize = 17.sp) }, confirmButton = {},
+        val u = mp(allUsers[uid])
+        AlertDialog(onDismissRequest = { sel = null }, containerColor = DialogC, title = { Text(playerDisplayTitle(uid, u), fontSize = 17.sp) }, confirmButton = {},
             dismissButton = { TextButton({ sel = null }) { Text("CLOSE") } },
             text = { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (canAccess("balance_adjust")) {
@@ -702,9 +788,9 @@ fun UsersScreen(nav: NavController) {
             listOf("user", "staff", "admin").forEach { r -> ABtn(r.uppercase(), Modifier.fillMaxWidth(), Field, true) { scope.launch { ctx.toast(AR.setUser(uid, "role", r)); roleDlg = false; sel = null } } }
         } })
     banDlg?.let { targetUid ->
-        val targetUser = mp(users[targetUid])
+        val targetUser = mp(allUsers[targetUid])
         AlertDialog(onDismissRequest = { banDlg = null }, containerColor = DialogC,
-            title = { Text("Ban ${str(targetUser["username"])}") },
+            title = { Text("Ban ${playerDisplayTitle(targetUid, targetUser)}") },
             text = { Column {
                 Text("The player sees this reason in a popup with a Customer Support button.", fontSize = 12.sp, color = Color.Gray)
                 OutlinedTextField(banReasonText, { banReasonText = it.take(300) }, Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Ban reason") }, minLines = 2)
@@ -713,9 +799,9 @@ fun UsersScreen(nav: NavController) {
             dismissButton = { TextButton({ banDlg = null }) { Text("CANCEL") } })
     }
     themeDlg?.let { targetUid ->
-        val targetUser = mp(users[targetUid])
+        val targetUser = mp(allUsers[targetUid])
         AlertDialog(onDismissRequest = { themeDlg = null }, containerColor = DialogC,
-            title = { Text("Player theme: ${str(targetUser["username"])}") },
+            title = { Text("Player theme: ${playerDisplayTitle(targetUid, targetUser)}") },
             text = { SelectField("Theme", themeValue, PlayerThemeChoices.perUserChoices) { themeValue = it } },
             confirmButton = { TextButton({ scope.launch { ctx.toast(AR.setPlayerTheme(targetUid, themeValue)); themeDlg = null; sel = null } }) { Text("SAVE") } },
             dismissButton = { TextButton({ themeDlg = null }) { Text("CANCEL") } })
@@ -922,12 +1008,69 @@ fun NotifyScreen(nav: NavController, presetMatch: String, presetUser: String) {
     var title by remember { mutableStateOf("") }; var body by remember { mutableStateOf("") }; var image by remember { mutableStateOf("") }
     var target by remember { mutableStateOf(if (presetMatch.isNotBlank()) "match" else if (presetUser.isNotBlank()) "user" else "all") }
     var matchKey by remember { mutableStateOf(presetMatch) }; var uname by remember { mutableStateOf(presetUser) }
+    var pickedUserUid by remember { mutableStateOf("") }
+    var extraNotifyUsers by remember { mutableStateOf<Map<String, Map<String, Any?>>>(emptyMap()) }
+    var matchQuery by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var voiceFile by remember { mutableStateOf<java.io.File?>(null) }; var voiceMs by remember { mutableLongStateOf(0L) }
     val voicePlayer = rememberVoicePlayer()
     LaunchedEffect(Unit) { VoiceStore.purgeExpired() }
     var hasSa by remember { mutableStateOf(Fcm.sa(ctx).isNotBlank()) }
     val matches by rflow(init = emptyMap<String, Any?>()) { AR.watch("matches") }
+    val notifyUsers by rflow(target, init = emptyMap<String, Any?>()) {
+        if (target == "user" && canAccess("players_view")) AR.watch("users") else kotlinx.coroutines.flow.flowOf(emptyMap())
+    }
+    LaunchedEffect(target, uname) {
+        if (target != "user") {
+            extraNotifyUsers = emptyMap()
+            return@LaunchedEffect
+        }
+        val clean = cleanSearchQuery(uname).removePrefix("@").trim()
+        if (clean.length < 2) {
+            extraNotifyUsers = emptyMap()
+            return@LaunchedEffect
+        }
+        delay(220)
+        extraNotifyUsers = AR.lookupPlayersDirect(clean)
+    }
+    val allNotifyUsers = remember(notifyUsers, extraNotifyUsers) {
+        if (extraNotifyUsers.isEmpty()) notifyUsers else notifyUsers + extraNotifyUsers
+    }
+    val matchedPlayers = remember(allNotifyUsers, uname) {
+        val term = cleanSearchQuery(uname)
+        if (term.isBlank()) emptyList()
+        else allNotifyUsers.entries
+            .filter { playerMatchesQuery(it.key, mp(it.value), term) }
+            .sortedBy { playerDisplayTitle(it.key, mp(it.value)).lowercase() }
+            .take(5)
+    }
+    val sortedMatches = remember(matches) { matches.entries.sortedByDescending { num(mp(it.value)["startTime"]) } }
+    val filteredMatches = remember(sortedMatches, matchQuery) {
+        val term = matchQuery.trim()
+        if (term.isEmpty()) sortedMatches
+        else {
+            val cleanNo = term.removePrefix("#")
+            sortedMatches.filter { entry ->
+                val m = mp(entry.value)
+                entry.key.contains(term, true) ||
+                    str(m["matchId"]).contains(term, true) ||
+                    str(m["matchNo"]).contains(cleanNo, true) ||
+                    str(m["title"]).contains(term, true)
+            }
+        }
+    }
+    LaunchedEffect(matchQuery, filteredMatches) {
+        val term = matchQuery.trim()
+        if (term.isNotEmpty() && filteredMatches.isNotEmpty()) {
+            val cleanNo = term.removePrefix("#")
+            val exact = filteredMatches.firstOrNull { entry ->
+                val m = mp(entry.value)
+                str(m["matchId"]).equals(term, true) || str(m["matchNo"]).equals(cleanNo, true) || entry.key.equals(term, true)
+            }
+            if (exact != null) matchKey = exact.key
+            else if (filteredMatches.size == 1) matchKey = filteredMatches.first().key
+        }
+    }
     val pickSa = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) try {
             val txt = ctx.contentResolver.openInputStream(uri)!!.bufferedReader().readText()
@@ -939,9 +1082,85 @@ fun NotifyScreen(nav: NavController, presetMatch: String, presetUser: String) {
         ABar("Send notification", nav)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp)) {
             SelectField("Send to", target, listOf("all" to "All players", "match" to "Players of one match", "user" to "One player")) { target = it }
-            if (target == "match") SelectField("Match", matchKey, matches.entries.sortedByDescending { num(mp(it.value)["startTime"]) }.map {
-                val m = mp(it.value); it.key to "${str(m["title"])} #${str(m["matchNo"])}  (ID ${str(m["matchId"]).ifBlank { "-" }})" }) { matchKey = it }
-            if (target == "user") OutlinedTextField(uname, { uname = it }, Modifier.fillMaxWidth().padding(vertical = 4.dp), label = { Text("Player username") }, singleLine = true)
+            if (target == "match") {
+                OutlinedTextField(
+                    value = matchQuery,
+                    onValueChange = { matchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("notify_match_search"),
+                    label = { Text("Search match by Match ID, #No, or title") },
+                    singleLine = true,
+                    trailingIcon = { if (matchQuery.isNotEmpty()) TextButton({ matchQuery = "" }) { Text("CLEAR") } }
+                )
+                SelectField(
+                    "Match (${filteredMatches.size})",
+                    matchKey,
+                    filteredMatches.map {
+                        val m = mp(it.value)
+                        it.key to "${str(m["title"])} #${str(m["matchNo"])}  (ID ${str(m["matchId"]).ifBlank { "-" }})"
+                    }
+                ) { matchKey = it }
+                if (matchQuery.isNotBlank() && filteredMatches.isEmpty()) {
+                    Text("No match found for \"$matchQuery\"", color = Orange, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+                } else if (matchQuery.isNotBlank() && filteredMatches.size in 1..5) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        filteredMatches.forEach { entry ->
+                            val m = mp(entry.value)
+                            val isSel = entry.key == matchKey
+                            Row(
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) Purple.copy(alpha = 0.25f) else CardC)
+                                    .border(1.dp, if (isSel) Purple else Color.Transparent, RoundedCornerShape(8.dp))
+                                    .clickable { matchKey = entry.key }.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("${str(m["title"])} #${str(m["matchNo"])}  •  ID: ${str(m["matchId"]).ifBlank { "-" }}", Modifier.weight(1f), fontSize = 12.sp, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal)
+                                if (isSel) Text("SELECTED", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+                matches[matchKey]?.let { selVal ->
+                    val selM = mp(selVal)
+                    Text("Selected match: ${str(selM["title"])} #${str(selM["matchNo"])} (ID: ${str(selM["matchId"]).ifBlank { "-" }})", color = Green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp))
+                }
+            }
+            if (target == "user") {
+                OutlinedTextField(
+                    value = uname,
+                    onValueChange = { uname = it; pickedUserUid = "" },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("notify_user_search"),
+                    label = { Text("Search player (username / phone / name)") },
+                    singleLine = true,
+                    trailingIcon = { if (uname.isNotEmpty()) TextButton({ uname = ""; pickedUserUid = "" }) { Text("CLEAR") } }
+                )
+                if (matchedPlayers.isNotEmpty()) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        matchedPlayers.forEach { entry ->
+                            val pu = mp(entry.value)
+                            val label = playerDisplayTitle(entry.key, pu)
+                            val sub = listOf((str(pu["firstName"]) + " " + str(pu["lastName"])).trim(), str(pu["phone"]))
+                                .filter { it.isNotBlank() }.joinToString(" • ")
+                            val isSel = pickedUserUid == entry.key || (pickedUserUid.isBlank() && str(pu["username"]).equals(cleanSearchQuery(uname).removePrefix("@"), true))
+                            Row(
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) Purple.copy(alpha = 0.25f) else CardC)
+                                    .border(1.dp, if (isSel) Purple else Color.Transparent, RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        pickedUserUid = entry.key
+                                        uname = str(pu["username"]).ifBlank { label }
+                                    }.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    if (sub.isNotBlank()) Text(sub, fontSize = 11.sp, color = Color.Gray)
+                                }
+                                if (isSel) Text("SELECTED", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
             VoiceRecorderCard(voiceFile, voiceMs, voicePlayer) { f, ms -> voiceFile = f; voiceMs = ms }
             OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth().padding(vertical = 4.dp), label = { Text(if (voiceFile == null) "Title (required)" else "Title (optional with a voice message)") }, singleLine = true)
             OutlinedTextField(body, { body = it }, Modifier.fillMaxWidth().padding(vertical = 4.dp), label = { Text("Message (optional)") }, minLines = 3)
@@ -957,32 +1176,55 @@ fun NotifyScreen(nav: NavController, presetMatch: String, presetUser: String) {
             val vf = voiceFile
             if (title.isBlank() && vf == null) { ctx.toast("Title is required"); return@ABtn }
             if (target == "match" && matchKey.isBlank()) { ctx.toast("Choose a match"); return@ABtn }
-            if (target == "user" && uname.isBlank()) { ctx.toast("Enter a username"); return@ABtn }
+            if (target == "user" && uname.isBlank() && pickedUserUid.isBlank()) { ctx.toast("Enter a username"); return@ABtn }
             scope.launch {
                 busy = true
                 try {
+                    suspend fun resolveTargetUid(): Pair<String, String> {
+                        val clean = cleanSearchQuery(uname).removePrefix("@").trim()
+                        if (pickedUserUid.isNotBlank()) {
+                            val uName = str(mp(allNotifyUsers[pickedUserUid])["username"]).ifBlank { clean.lowercase() }
+                            return pickedUserUid to uName
+                        }
+                        val exact = allNotifyUsers.entries.firstOrNull { playerMatchesQuery(it.key, mp(it.value), clean) }
+                        if (exact != null) {
+                            return exact.key to str(mp(exact.value)["username"]).ifBlank { clean.lowercase() }
+                        }
+                        val low = clean.lowercase()
+                        if (isSafeFirebaseKey(low)) {
+                            val rUid = str(AR.get("referralCodes/$low"))
+                            if (rUid.isNotBlank()) return rUid to low
+                        }
+                        val remote = AR.lookupPlayersDirect(clean)
+                        val firstRemote = remote.entries.firstOrNull()
+                        return if (firstRemote != null) {
+                            firstRemote.key to str(firstRemote.value["username"]).ifBlank { low }
+                        } else "" to low
+                    }
                     // voice message: saved in Firebase first (players listen to it again in Account -> Voice messages), then the push is sent
                     var voiceId = ""
                     var toUid = ""
+                    var resolvedUname = cleanSearchQuery(uname).removePrefix("@").trim().lowercase()
+                    if (target == "user") {
+                        val (resolved, rn) = resolveTargetUid()
+                        toUid = resolved
+                        resolvedUname = rn
+                        if (toUid.isBlank()) { ctx.toast("No player with that username"); busy = false; return@launch }
+                    }
                     if (vf != null) {
-                        if (target == "user") {
-                            toUid = str(AR.get("referralCodes/${uname.trim().lowercase()}"))
-                            if (toUid.isBlank()) { ctx.toast("No player with that username"); busy = false; return@launch }
-                        }
                         voicePlayer.stop()
-                        voiceId = VoiceStore.upload(vf, voiceMs, title, body, target, if (target == "match") matchKey else "", toUid, if (target == "user") uname.trim().lowercase() else "")
+                        voiceId = VoiceStore.upload(vf, voiceMs, title, body, target, if (target == "match") matchKey else "", toUid, if (target == "user") resolvedUname else "")
                     }
                     var pushMsg = "Push not sent (no key)."
                     if (hasSa) {
-                        val pTitle = if (vf != null) title.trim().ifBlank { "BESTWIN ESPORTS" } else title
+                        val pTitle = if (vf != null) title.trim().ifBlank { "DOUx24" } else title
                         val pBody = if (vf != null) "Voice message" else body
                         val extra = if (vf != null) mapOf("type" to "voice", "vid" to voiceId) else emptyMap()
                         val err = when (target) {
                             "all" -> Fcm.send(ctx, "all", true, pTitle, pBody, BackendConfig.resolve(image), extra)
                             "match" -> Fcm.send(ctx, "m_$matchKey", true, pTitle, pBody, BackendConfig.resolve(image), extra)
                             else -> {
-                                val uid = if (toUid.isNotBlank()) toUid else str(AR.get("referralCodes/${uname.trim().lowercase()}"))
-                                val tk = if (uid.isBlank()) "" else str(AR.get("users/$uid/fcmToken"))
+                                val tk = if (toUid.isBlank()) "" else str(AR.get("users/$toUid/fcmToken"))
                                 if (tk.isBlank()) "That player has not opened the app with notifications yet" else Fcm.send(ctx, tk, false, pTitle, pBody, BackendConfig.resolve(image), extra)
                             }
                         }
@@ -1293,7 +1535,7 @@ fun LeaderboardAdminScreen(nav: NavController) {
     val gamesRaw by rflow(init = emptyMap<String, Any?>()) { AR.watch("games") }
     val gameRanksRaw by rflow(init = emptyMap<String, Any?>()) { AR.watch("leaderboardGame") }
     val usersRaw by rflow(init = emptyMap<String, Any?>()) {
-        if (canAccess("players_view")) AR.watchQ(AR.db.child("users").orderByChild("createdAt").limitToLast(300))
+        if (canAccess("players_view")) AR.watch("users")
         else kotlinx.coroutines.flow.flowOf(emptyMap())
     }
     val boardN by rflow(init = null as Map<String, Any?>?) { AR.watch("leaderboardCycle") }
@@ -1419,12 +1661,28 @@ private fun AdminGameLeaderboardSection(
     var bonusText by remember { mutableStateOf("0") }
     var creditTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var creditText by remember { mutableStateOf("") }
-    val playerOptions = usersRaw.entries.filter { e ->
-        val u = mp(e.value)
-        str(u["role"]).ifBlank { "user" } == "user" &&
-            (playerSearch.isBlank() || str(u["username"]).contains(playerSearch, true) || e.key.contains(playerSearch, true))
-    }.sortedBy { str(mp(it.value)["username"]).lowercase() }.take(100)
-    val chosenName = str(mp(usersRaw[chosenUid])["username"]).ifBlank { chosenUid }
+    var extraLbUsers by remember { mutableStateOf<Map<String, Map<String, Any?>>>(emptyMap()) }
+    LaunchedEffect(addDialog, playerSearch) {
+        val term = cleanSearchQuery(playerSearch).removePrefix("@").trim()
+        if (!addDialog || term.length < 2) {
+            extraLbUsers = emptyMap()
+            return@LaunchedEffect
+        }
+        delay(220)
+        extraLbUsers = AR.lookupPlayersDirect(term)
+    }
+    val allLbUsers = remember(usersRaw, extraLbUsers) {
+        if (extraLbUsers.isEmpty()) usersRaw else usersRaw + extraLbUsers
+    }
+    val playerOptions = remember(allLbUsers, playerSearch) {
+        val term = cleanSearchQuery(playerSearch)
+        allLbUsers.entries.filter { e ->
+            val u = mp(e.value)
+            str(u["role"]).ifBlank { "user" } == "user" &&
+                (term.isEmpty() || playerMatchesQuery(e.key, u, term))
+        }.sortedBy { playerDisplayTitle(it.key, mp(it.value)).lowercase() }.take(150)
+    }
+    val chosenName = playerDisplayTitle(chosenUid, mp(allLbUsers[chosenUid]))
 
     var editTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var editText by remember { mutableStateOf("") }

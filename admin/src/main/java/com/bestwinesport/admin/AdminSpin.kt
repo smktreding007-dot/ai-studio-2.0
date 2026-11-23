@@ -158,39 +158,31 @@ fun SpinAdminScreen(nav: NavController) {
     }
 
     fun runSearch() {
-        val q = search.trim().removePrefix("@")
+        val q = cleanSearchQuery(search).removePrefix("@").trim()
         if (q.length < 2) { ctx.toast("Type at least 2 letters of the username"); return }
         scope.launch {
             val low = q.lowercase()
             var found: List<Pair<String, Map<String, Any?>>> = emptyList()
             var denied = false
-            fun rows(snap: com.google.firebase.database.DataSnapshot) =
-                snap.children.mapNotNull { ch -> ch.key?.let { k -> k to mp(ch.value) } }
             try {
-                // 1) username starts with the typed text (usernames are saved in lowercase)
-                found = rows(AR.db.child("users").orderByChild("username").startAt(low).endAt(low + "\uf8ff").limitToFirst(20).get().await())
-                // 2) exact phone number
-                if (found.isEmpty() && low.all { it.isDigit() }) {
-                    found = rows(AR.db.child("users").orderByChild("phone").equalTo(q).limitToFirst(5).get().await())
-                }
-                // 3) the typed text is a player id
-                if (found.isEmpty() && q.length >= 20) {
-                    val one = AR.db.child("users").child(q).get().await()
-                    if (one.exists()) found = listOf(q to mp(one.value))
-                }
-                // 4) username contains the typed text (looks at the newest 600 players only)
+                // 1) Fast indexed lookup by username, phone (+91/10-digit variants), email, referralCodes, UID
+                found = AR.lookupPlayersDirect(q).entries.map { it.key to it.value }.take(25)
+                // 2) Full users scan fallback so middle-substring / mixed-case / full-name searches never miss older players
                 if (found.isEmpty()) {
-                    found = rows(AR.db.child("users").orderByChild("createdAt").limitToLast(600).get().await())
-                        .filter { (_, u) -> str(u["username"]).lowercase().contains(low) }
-                        .take(20)
+                    val snap = AR.db.child("users").get().await()
+                    found = snap.children.mapNotNull { ch ->
+                        val k = ch.key ?: return@mapNotNull null
+                        val u = mp(ch.value)
+                        if (playerMatchesQuery(k, u, q)) k to u else null
+                    }.take(25)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 denied = true
             }
-            // 5) staff without "view players": exact username through the public referral code list
-            if (found.isEmpty()) {
+            // 3) staff without "view players": exact username through the public referral code list
+            if (found.isEmpty() && isSafeFirebaseKey(low)) {
                 try {
                     val uid = AR.db.child("referralCodes").child(low).get().await().value?.toString().orEmpty()
                     if (uid.isNotBlank()) found = listOf(uid to mapOf<String, Any?>("username" to low))
@@ -377,16 +369,17 @@ fun SpinAdminScreen(nav: NavController) {
             Head("PLAYER CONTROL (free spins, lock, block)")
             Help("Search a player to GIVE HIM FREE SPINS, to give him his own lock (he can win at most that many coins) or to block his spin completely. A player lock beats the lock for all players.")
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(search, { search = it }, Modifier.weight(1f), label = { Text("Username") }, singleLine = true)
+                OutlinedTextField(search, { search = it }, Modifier.weight(1f), label = { Text("Username / phone / name") }, singleLine = true)
                 Spacer(Modifier.width(8.dp))
                 ABtn("SEARCH", small = true) { runSearch() }
             }
             results.forEach { (uid, u) ->
-                val name = str(u["username"]).ifBlank { uid }
+                val name = playerDisplayTitle(uid, u)
+                val sub = listOf((str(u["firstName"]) + " " + str(u["lastName"])).trim(), str(u["phone"])).filter { it.isNotBlank() }.joinToString(" • ")
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(8.dp)).background(CardC).clickable { openEdit(uid, name) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Text(listOf(str(u["firstName"]), str(u["lastName"])).filter { it.isNotBlank() }.joinToString(" "), fontSize = 12.sp, color = Color.Gray)
+                        if (sub.isNotBlank()) Text(sub, fontSize = 12.sp, color = Color.Gray)
                     }
                     Text("SPIN / LOCK", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }

@@ -121,7 +121,7 @@ fun SupportTicketAdminDetailScreen(nav: NavController, uid: String, ticketId: St
                 val isStaff = str(msg["senderRole"]) in setOf("admin", "staff")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isStaff) Arrangement.End else Arrangement.Start) {
                     Column(Modifier.fillMaxWidth(.88f).clip(RoundedCornerShape(12.dp)).background(if (isStaff) Color(0xFF392451) else CardC).padding(11.dp)) {
-                        Text("${str(msg["senderName"]).ifBlank { if (isStaff) "BESTWIN ESPORTS Support" else str(t["username"]) }} • ${str(msg["senderRole"]).uppercase()}", color = if (isStaff) Color(0xFFFF9C4A) else Color(0xFFB999FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("${str(msg["senderName"]).ifBlank { if (isStaff) "DOUx24 Support" else str(t["username"]) }} • ${str(msg["senderRole"]).uppercase()}", color = if (isStaff) Color(0xFFFF9C4A) else Color(0xFFB999FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         Text(str(msg["body"]), Modifier.padding(top = 4.dp), fontSize = 13.sp, lineHeight = 19.sp)
                         Text(fdate(msg["createdAt"]), Modifier.align(Alignment.End).padding(top = 5.dp), color = Color.Gray, fontSize = 9.sp)
                     }
@@ -140,7 +140,7 @@ fun SupportTicketAdminDetailScreen(nav: NavController, uid: String, ticketId: St
                         val ref = AR.db.child("supportTickets/$uid/$ticketId")
                         val messageId = ref.child("messages").push().key ?: error("Could not create reply")
                         val actor = AR.auth.currentUser
-                        val senderName = actor?.displayName?.takeIf { it.isNotBlank() } ?: actor?.email ?: "BESTWIN ESPORTS Support"
+                        val senderName = actor?.displayName?.takeIf { it.isNotBlank() } ?: actor?.email ?: "DOUx24 Support"
                         val now = System.currentTimeMillis()
                         val message = mapOf("senderUid" to (actor?.uid ?: Session.uid), "senderName" to senderName, "senderRole" to Session.role,
                             "body" to body, "createdAt" to now)

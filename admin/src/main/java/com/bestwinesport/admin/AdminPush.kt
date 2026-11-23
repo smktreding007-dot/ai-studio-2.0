@@ -61,7 +61,7 @@ object AdminPush {
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "BESTWIN ESPORTS Admin alerts", NotificationManager.IMPORTANCE_HIGH).apply {
+            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "DOUx24 Admin alerts", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Withdrawal and support-ticket alerts"
                 enableVibration(true)
             })
@@ -77,7 +77,7 @@ class AdminMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val title = message.data["title"]?.take(100)?.ifBlank { null } ?: "BESTWIN ESPORTS Admin"
+        val title = message.data["title"]?.take(100)?.ifBlank { null } ?: "DOUx24 Admin"
         val body = message.data["body"]?.take(240).orEmpty()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         AdminPush.ensureChannel(this)

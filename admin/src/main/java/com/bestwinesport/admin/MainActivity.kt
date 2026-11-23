@@ -206,7 +206,7 @@ fun AdminSplash(nav: NavController) {
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             AdminRotatingLoadingLogo(size = 76)
             Spacer(Modifier.height(12.dp))
-            Text("BESTWIN ESPORTS ADMIN", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Red)
+            Text("DOUx24 ADMIN", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Red)
             Spacer(Modifier.height(10.dp)); Text("Loading...", color = Color.Gray, fontSize = 13.sp)
         }
     }
@@ -304,7 +304,7 @@ fun KeyDialog(title: String, key: String, note: String, onDone: () -> Unit) {
         } },
         confirmButton = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton({ clip.setText(AnnotatedString(key)); ctx.toast("Copied") }) { Text("COPY") }
-            TextButton({ ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, "BESTWIN ESPORTS Admin key: $key") }, "Share")) }) { Text("SHARE") }
+            TextButton({ ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, "DOUx24 Admin key: $key") }, "Share")) }) { Text("SHARE") }
             TextButton(onDone) { Text("DONE") }
         } })
 }

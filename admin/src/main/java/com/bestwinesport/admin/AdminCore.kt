@@ -64,6 +64,82 @@ fun num(a: Any?): Double = when (a) { is Number -> a.toDouble(); is String -> a.
 fun money(d: Double): String = if (d % 1.0 == 0.0) d.toLong().toString() else "%.2f".format(d)
 fun fdate(a: Any?): String = if (num(a) == 0.0) "-" else SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(num(a).toLong()))
 
+fun cleanSearchQuery(raw: String): String = raw
+    .replace("\u200B", "")
+    .replace("\u200C", "")
+    .replace("\u200D", "")
+    .replace("\uFEFF", "")
+    .replace('\u00A0', ' ')
+    .replace(Regex("\\s+"), " ")
+    .trim()
+
+fun isSafeFirebaseKey(key: String): Boolean =
+    key.isNotEmpty() && !key.contains('.') && !key.contains('#') && !key.contains('$') && !key.contains('[') && !key.contains(']') && !key.contains('/')
+
+fun playerDisplayTitle(uid: String, u: Map<String, Any?>): String {
+    val un = str(u["username"]).trim()
+    if (un.isNotEmpty()) return un
+    val full = (str(u["firstName"]) + " " + str(u["lastName"])).trim()
+    if (full.isNotEmpty()) return full
+    val nm = str(u["name"]).trim().ifBlank { str(u["displayName"]).trim() }
+    if (nm.isNotEmpty()) return nm
+    val em = str(u["email"]).trim()
+    if (em.isNotEmpty()) return em
+    val ph = str(u["phone"]).trim().ifBlank { str(u["mobile"]).trim() }
+    if (ph.isNotEmpty()) return ph
+    return "UID ${uid.take(8)}"
+}
+
+fun playerMatchesQuery(uid: String, u: Map<String, Any?>, rawQuery: String): Boolean {
+    val term = cleanSearchQuery(rawQuery)
+    if (term.isEmpty()) return true
+    val noAt = term.removePrefix("@").trim()
+    if (uid.contains(term, true) || (noAt.isNotEmpty() && uid.contains(noAt, true))) return true
+    val first = str(u["firstName"]).trim()
+    val last = str(u["lastName"]).trim()
+    val fullName = "$first $last".trim()
+    val revName = "$last $first".trim()
+    val fields = listOf(
+        str(u["username"]),
+        str(u["phone"]),
+        str(u["mobile"]),
+        str(u["phoneNumber"]),
+        str(u["email"]),
+        first,
+        last,
+        fullName,
+        revName,
+        str(u["name"]),
+        str(u["displayName"]),
+        str(u["fullName"]),
+        str(u["referralCode"]),
+        str(u["ign"]),
+        str(u["gameId"]),
+        str(u["gameName"]),
+        str(u["ffUid"]),
+        str(u["bgmiId"]),
+        str(u["uid"])
+    )
+    if (fields.any { it.isNotEmpty() && (it.contains(term, true) || (noAt.isNotEmpty() && it.contains(noAt, true))) }) {
+        return true
+    }
+    val qDigits = term.filter(Char::isDigit)
+    if (qDigits.length >= 4) {
+        val qCore = if (qDigits.length > 10 && qDigits.startsWith("91")) qDigits.takeLast(10) else qDigits.trimStart('0')
+        val phoneFields = listOf(str(u["phone"]), str(u["mobile"]), str(u["phoneNumber"]))
+        if (phoneFields.any { pf ->
+                val pDigits = pf.filter(Char::isDigit)
+                pDigits.isNotEmpty() && (pDigits.contains(qDigits) || (qCore.length >= 4 && pDigits.contains(qCore)))
+            }) return true
+    }
+    val tokens = noAt.split(' ').map { it.trim() }.filter { it.isNotEmpty() }
+    if (tokens.size > 1) {
+        val bag = (listOf(uid) + fields).filter { it.isNotBlank() }.joinToString(" ").lowercase()
+        if (tokens.all { bag.contains(it.lowercase()) }) return true
+    }
+    return false
+}
+
 /** Accept both the documented 24-hour form and the common 12-hour AM/PM form. */
 fun parseMatchDate(raw: String): Long? {
     val text = raw.trim().replace(Regex("\\s+"), " ")
@@ -1159,5 +1235,83 @@ object AR {
             logAct("leaderboard_auto", "leaderboard", "enabled=$enabled; new match-result prizes ${if (enabled) "add to" else "do not add to"} rank scores")
             "Automatic leaderboard updates ${if (enabled) "enabled" else "disabled"}"
         } catch (e: Exception) { e.message ?: "Failed" }
+    }
+
+    /** Direct indexed & key-based user lookup fallback so players are always found even if the live users listener is incomplete or lagged. */
+    suspend fun lookupPlayersDirect(rawQuery: String): Map<String, Map<String, Any?>> {
+        val term = cleanSearchQuery(rawQuery)
+        val noAt = term.removePrefix("@").trim()
+        if (noAt.length < 2) return emptyMap()
+        val low = noAt.lowercase()
+        val out = linkedMapOf<String, Map<String, Any?>>()
+        fun putSnap(s: DataSnapshot) {
+            for (ch in s.children) {
+                val k = ch.key ?: continue
+                val m = mp(ch.value)
+                if (m.isNotEmpty()) out[k] = m
+            }
+        }
+        suspend fun fetchUid(uid: String) {
+            if (!isSafeFirebaseKey(uid) || out.containsKey(uid)) return
+            try {
+                val snap = db.child("users").child(uid).get().await()
+                val m = mp(snap.value)
+                if (m.isNotEmpty()) out[uid] = m
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { }
+        }
+        try {
+            if (isSafeFirebaseKey(low)) {
+                val refUid = db.child("referralCodes").child(low).get().await().value?.toString().orEmpty()
+                if (refUid.isNotBlank()) fetchUid(refUid)
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        try {
+            if (isSafeFirebaseKey(noAt) && noAt != low) {
+                val refUid = db.child("referralCodes").child(noAt).get().await().value?.toString().orEmpty()
+                if (refUid.isNotBlank()) fetchUid(refUid)
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        try {
+            if (isSafeFirebaseKey(low)) {
+                val em = db.child("loginMap").child(low).get().await().value?.toString().orEmpty()
+                if (em.isNotBlank()) {
+                    putSnap(db.child("users").orderByChild("email").equalTo(em).limitToFirst(10).get().await())
+                }
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        try {
+            putSnap(db.child("users").orderByChild("username").startAt(low).endAt(low + "\uf8ff").limitToFirst(30).get().await())
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        if (noAt != low) {
+            try {
+                putSnap(db.child("users").orderByChild("username").startAt(noAt).endAt(noAt + "\uf8ff").limitToFirst(20).get().await())
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        }
+        if (noAt.contains('@')) {
+            try {
+                putSnap(db.child("users").orderByChild("email").startAt(low).endAt(low + "\uf8ff").limitToFirst(20).get().await())
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+        }
+        val qDigits = noAt.filter(Char::isDigit)
+        if (qDigits.length >= 4) {
+            val core = if (qDigits.length >= 10) qDigits.takeLast(10) else qDigits
+            val candidates = linkedSetOf(noAt, qDigits, core, "+91$core", "91$core", "0$core").filter { it.isNotBlank() }
+            for (ph in candidates) {
+                try {
+                    putSnap(db.child("users").orderByChild("phone").equalTo(ph).limitToFirst(10).get().await())
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+                try {
+                    if (isSafeFirebaseKey(ph)) {
+                        val em = db.child("loginMap").child(ph).get().await().value?.toString().orEmpty()
+                        if (em.isNotBlank()) {
+                            putSnap(db.child("users").orderByChild("email").equalTo(em).limitToFirst(10).get().await())
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+            }
+        }
+        if (noAt.length >= 15 && isSafeFirebaseKey(noAt)) fetchUid(noAt)
+        return out
     }
 }

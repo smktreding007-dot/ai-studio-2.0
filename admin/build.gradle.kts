@@ -10,8 +10,8 @@ android {
         applicationId = "com.doux24.admin"
         minSdk = 24
         targetSdk = 34
-        versionCode = 26
-        versionName = "7"
+        versionCode = 28
+        versionName = "9"
     }
     // The release build is signed with the debug key so the APK installs on any phone (Build > Build APK, release or debug).
     // For the Play Store create your own keystore and replace this line.

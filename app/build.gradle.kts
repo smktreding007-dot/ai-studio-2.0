@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-  namespace = "com.bestwinesport.staff"
+  namespace = "com.bestwinesport.admin"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.doux24.staff"
+    applicationId = "com.doux24.admin"
     minSdk = 24
     targetSdk = 36
-    versionCode = 3
-    versionName = "6"
+    versionCode = 28
+    versionName = "9"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

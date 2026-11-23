@@ -384,7 +384,7 @@ private val HiAdmin1: Map<String, String> = mapOf(
     "Export failed" to "एक्सपोर्ट नहीं हो सका",
     "Photo not available" to "फ़ोटो उपलब्ध नहीं",
     "SKIP" to "छोड़ें",
-    "BESTWIN ESPORTS ADMIN" to "BESTWIN ESPORTS एडमिन",
+    "DOUx24 ADMIN" to "DOUx24 एडमिन",
     "Admin Login" to "एडमिन लॉगिन",
     "Admin accounts only. Enter your 12-digit admin login key" to "सिर्फ़ एडमिन अकाउंट के लिए। अपनी 12 अंकों की एडमिन लॉगिन की लिखें",
     "Email or username" to "ईमेल या यूज़रनेम",
